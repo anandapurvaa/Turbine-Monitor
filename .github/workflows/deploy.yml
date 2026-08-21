@@ -1,4 +1,8 @@
-﻿name: Deploy Dashboard to Cloud Run
+﻿permissions:
+  contents: read
+  id-token: write
+
+name: Deploy Dashboard to Cloud Run
 
 on:
   push:
