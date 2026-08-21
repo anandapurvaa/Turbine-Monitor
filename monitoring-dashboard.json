@@ -1,0 +1,97 @@
+{
+  "displayName": "TurbineGuard - Retraining & Scheduler",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "Cloud Run Job - Execution Count (Success vs Failure)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"run_job\" AND metric.type=\"run.googleapis.com/job/completed_task_attempt_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_SUM",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.label.\"status\""]
+                  }
+                },
+                "unitOverride": "1"
+              },
+              "plotType": "STACKED_AREA",
+              "minAlignmentPeriod": "300s"
+            }
+          ],
+          "yAxis": {
+            "label": "Executions",
+            "scale": "LINEAR"
+          },
+          "chartOptions": {
+            "mode": "COLOR"
+          }
+        }
+      },
+      {
+        "title": "Cloud Run Job - Success Rate (%)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"run_job\" AND metric.type=\"run.googleapis.com/job/completed_task_attempt_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_SUM",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.label.\"status\""]
+                  }
+                },
+                "unitOverride": "1"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "300s"
+            }
+          ],
+          "yAxis": {
+            "label": "Executions",
+            "scale": "LINEAR"
+          },
+          "chartOptions": {
+            "mode": "COLOR"
+          }
+        }
+      },
+      {
+        "title": "Cloud Scheduler - Last Job Run Time",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_scheduler_job\" AND metric.type=\"scheduler.googleapis.com/last_job_run_time\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MAX",
+                    "crossSeriesReducer": "REDUCE_NONE"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s"
+            }
+          ],
+          "yAxis": {
+            "label": "Last Run Time (ms since epoch)",
+            "scale": "LINEAR"
+          },
+          "chartOptions": {
+            "mode": "COLOR"
+          }
+        }
+      }
+    ]
+  }
+}
