@@ -1,0 +1,98 @@
+[
+  {
+    "id": "HPC-001",
+    "title": "High Pressure Compressor Efficiency Degradation",
+    "content": "\n        High Pressure Compressor (HPC) efficiency degradation is characterized by:\n        - Increased HPC outlet temperature (sensor_14)\n        - Decreased HPC pressure ratio (sensor_15)\n        - Reduced fan speed (sensor_7) as the engine compensates\n        - Elevated total temperature at HPC outlet (sensor_11)\n        \n        This is the primary failure mode in the FD001 dataset. The degradation\n        progresses gradually over 150-200 cycles before reaching critical levels.\n        \n        Maintenance action: Schedule HPC blade inspection and cleaning. Replace\n        if efficiency drop exceeds 5% from baseline.\n        ",
+    "sensor_signatures": [
+      "sensor_14",
+      "sensor_15",
+      "sensor_7",
+      "sensor_11"
+    ]
+  },
+  {
+    "id": "FAN-001",
+    "title": "Fan Speed Sensor Drift and Calibration Error",
+    "content": "\n        Fan speed sensor drift manifests as:\n        - Gradual deviation in fan speed readings (sensor_7)\n        - Discrepancy between commanded and actual fan speed\n        - May correlate with changes in bypass duct flow (sensor_5)\n        \n        This failure mode appears in FD003 and FD004 datasets alongside HPC\n        degradation.\n        \n        Maintenance action: Recalibrate fan speed sensor. Verify with ground\n        truth measurements.\n        ",
+    "sensor_signatures": [
+      "sensor_7",
+      "sensor_5"
+    ]
+  },
+  {
+    "id": "TEMP-001",
+    "title": "Excessive Core Temperature Rise",
+    "content": "\n        Abnormal core temperature patterns include:\n        - Rising core temperature (sensor_12)\n        - Elevated exhaust gas temperature (sensor_17)\n        - Increased fuel flow to maintain thrust (sensor_8)\n        \n        Often accompanies HPC degradation but can occur independently due to\n        cooling system issues.\n        \n        Maintenance action: Inspect cooling passages, check for blockages.\n        ",
+    "sensor_signatures": [
+      "sensor_12",
+      "sensor_17",
+      "sensor_8"
+    ]
+  },
+  {
+    "id": "PRESS-001",
+    "title": "Pressure Anomaly in Bypass Duct",
+    "content": "\n        Bypass duct pressure anomalies show:\n        - Fluctuating bypass duct pressure (sensor_5)\n        - Correlated changes in total pressure at HPC outlet (sensor_16)\n        - Possible fan blade vibration indicators\n        \n        May indicate foreign object damage or buildup in bypass duct.\n        \n        Maintenance action: Visual inspection of bypass duct, clean if needed.\n        ",
+    "sensor_signatures": [
+      "sensor_5",
+      "sensor_16"
+    ]
+  },
+  {
+    "id": "OIL-001",
+    "title": "Lubrication System Degradation",
+    "content": "\n        Lubrication issues manifest through:\n        - Rising oil temperature indicators (sensor_6)\n        - Changes in hydraulic pressure patterns\n        - Increased friction-related temperature rise\n        \n        Secondary effect: can accelerate bearing wear and compressor degradation.\n        \n        Maintenance action: Check oil quality, replace if contaminated. Inspect\n        bearings for wear.\n        ",
+    "sensor_signatures": [
+      "sensor_6"
+    ]
+  },
+  {
+    "id": "BLEED-001",
+    "title": "Bleed Air System Malfunction",
+    "content": "\n        Bleed air system issues show:\n        - Anomalous bleed air pressure readings\n        - Changes in compressor operating line\n        - Possible surge margin reduction\n        \n        Can affect engine stability and fuel efficiency.\n        \n        Maintenance action: Inspect bleed valves, check for leaks.\n        ",
+    "sensor_signatures": [
+      "sensor_15",
+      "sensor_16"
+    ]
+  },
+  {
+    "id": "CONTROL-001",
+    "title": "Engine Control System Response Anomaly",
+    "content": "\n        Control system response issues:\n        - Sluggish throttle response (visible in sensor_1, sensor_2, sensor_3)\n        - Delayed actuator movements\n        - Possible sensor feedback loop issues\n        \n        May be software-related or hardware degradation.\n        \n        Maintenance action: Run control system diagnostics, update software if\n        available.\n        ",
+    "sensor_signatures": [
+      "sensor_1",
+      "sensor_2",
+      "sensor_3"
+    ]
+  },
+  {
+    "id": "VIB-001",
+    "title": "Vibration and Imbalance Indicators",
+    "content": "\n        Vibration-related failure signatures:\n        - Oscillating patterns in multiple sensors\n        - Correlated changes in fan speed and pressure readings\n        - Possible bearing wear indicators\n        \n        Early detection critical to prevent catastrophic failure.\n        \n        Maintenance action: Vibration analysis, balance check, bearing inspection.\n        ",
+    "sensor_signatures": [
+      "sensor_7",
+      "sensor_15",
+      "sensor_16"
+    ]
+  },
+  {
+    "id": "DEGRADE-001",
+    "title": "General Performance Degradation Pattern",
+    "content": "\n        Overall engine health decline shows:\n        - Gradual reduction in maximum achievable thrust\n        - Increased fuel consumption for same operating point\n        - Shift in operating envelope boundaries\n        \n        This is a catch-all category for non-specific degradation.\n        \n        Maintenance action: Comprehensive engine health assessment, consider\n        overhaul if multiple systems degraded.\n        ",
+    "sensor_signatures": [
+      "sensor_8",
+      "sensor_14",
+      "sensor_15"
+    ]
+  },
+  {
+    "id": "SENSOR-001",
+    "title": "Sensor Calibration Drift",
+    "content": "\n        Sensor drift patterns:\n        - Gradual bias in one or more sensor readings\n        - Inconsistency between redundant measurements\n        - Sudden jumps after maintenance events\n        \n        Can mimic actual component degradation if not identified.\n        \n        Maintenance action: Cross-check with ground truth, recalibrate affected\n        sensors.\n        ",
+    "sensor_signatures": [
+      "sensor_11",
+      "sensor_12",
+      "sensor_14"
+    ]
+  }
+]

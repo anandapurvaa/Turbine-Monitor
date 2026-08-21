@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "cmms": {
+      "command": "python",
+      "args": ["-m", "src.mcp_servers.cmms_server_standalone"],
+      "cwd": "C:\\Users\\magic\\Projects\\TurbineGuard"
+    },
+    "manual-rag": {
+      "command": "python",
+      "args": ["-m", "src.mcp_servers.manual_rag_server"],
+      "cwd": "C:\\Users\\magic\\Projects\\TurbineGuard"
+    },
+    "sensor-stream": {
+      "command": "python",
+      "args": ["-m", "src.mcp_servers.sensor_stream_server"],
+      "cwd": "C:\\Users\\magic\\Projects\\TurbineGuard"
+    }
+  }
+}

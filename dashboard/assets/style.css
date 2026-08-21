@@ -1,0 +1,315 @@
+/* TurbineGuard AI Dashboard Styles */
+
+/* Header */
+.dashboard-header {
+    background-color: #f8f9fa;
+    padding: 20px 30px;
+    border-bottom: 2px solid #1f77b4;
+    margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    color: #1f77b4;
+}
+
+.dashboard-header p {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 280px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidebar h3 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.sidebar label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Metric cards */
+.metric-card {
+    text-align: center;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.metric-card-rul {
+    background: #f0f7ff;
+}
+
+.metric-card-cycle {
+    background: #f0fff0;
+}
+
+.metric-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.metric-value {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.metric-value-rul {
+    color: #1f77b4;
+}
+
+.metric-value-cycle {
+    color: #2ca02c;
+}
+
+.metric-unit {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Run button */
+.run-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.run-button:hover {
+    background-color: #155a8a;
+}
+
+/* Status message */
+.status-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Main content */
+.main-content {
+    width: calc(100% - 340px);
+    display: inline-block;
+    vertical-align: top;
+    padding: 20px;
+}
+
+/* Agent decision banner */
+.agent-decision-section {
+    margin-bottom: 20px;
+}
+
+.agent-decision-section h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.agent-decision-banner {
+    padding: 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.agent-decision-anomaly {
+    background: #fff5f5;
+    border: 2px solid #ffcccc;
+}
+
+.agent-decision-healthy {
+    background: #f0fff0;
+    border: 2px solid #cce5cc;
+}
+
+/* Cards */
+.card-section {
+    margin-bottom: 20px;
+}
+
+.card-section h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.work-order-card {
+    background: #fff5f5;
+    border: 2px solid #ffcccc;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.manuals-card {
+    background: #f0f7ff;
+    border: 2px solid #cce5ff;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.work-order-metrics {
+    margin-bottom: 15px;
+}
+
+.work-order-metric {
+    width: 30%;
+    display: inline-block;
+    text-align: center;
+}
+
+.work-order-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.work-order-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* Fleet overview */
+.fleet-overview {
+    margin-top: 20px;
+}
+
+.fleet-overview h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.kpi-container {
+    margin-bottom: 20px;
+}
+
+.kpi-card {
+    width: 30%;
+    display: inline-block;
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    margin-right: 3%;
+}
+
+.kpi-card:last-child {
+    margin-right: 0;
+}
+
+.kpi-total {
+    background: #f0f7ff;
+}
+
+.kpi-high-risk {
+    background: #fff5f5;
+}
+
+.kpi-avg {
+    background: #f0fff0;
+}
+
+.kpi-label {
+    font-size: 14px;
+    color: #666;
+}
+
+.kpi-value {
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.kpi-value-total {
+    color: #1f77b4;
+}
+
+.kpi-value-high-risk {
+    color: #d62728;
+}
+
+.kpi-value-avg {
+    color: #2ca02c;
+}
+
+/* Chart container */
+.chart-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.chart-container h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+/* Footer */
+.dashboard-footer {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    margin-top: 20px;
+}
+
+.dashboard-footer p {
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+    margin: 0;
+}
+
+/* Main container */
+.dashboard-container {
+    font-family: Arial, sans-serif;
+    background-color: #f5f6fa;
+    min-height: 100vh;
+    padding: 0 30px 30px 30px;
+}
+
+.main-layout {
+    display: flex;
+}
+
+/* Manual list */
+.manual-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.manual-item {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.manual-title {
+    font-weight: bold;
+}
+
+.manual-score {
+    color: #666;
+    font-size: 12px;
+}
