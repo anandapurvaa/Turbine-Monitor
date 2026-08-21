@@ -1,4 +1,4 @@
-@'
+$yamlContent = @"
 name: Deploy Dashboard to Cloud Run
 
 on:
@@ -23,20 +23,22 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/20298064017/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-        service_account: ${{ env.SERVICE_ACCOUNT }}
+        service_account: `$`{{ env.SERVICE_ACCOUNT }}
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
     
     - name: Configure Docker
-      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      run: gcloud auth configure-docker `$`{{ env.REGION }}-docker.pkg.dev
     
     - name: Build and Push
       run: |
-        docker build -f docker/Dockerfile.dash -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest
+        docker build -f docker/Dockerfile.dash -t `$`{{ env.REGION }}-docker.pkg.dev/`$`{{ env.PROJECT_ID }}/turbineguard/`$`{{ env.IMAGE_NAME }}:latest .
+        docker push `$`{{ env.REGION }}-docker.pkg.dev/`$`{{ env.PROJECT_ID }}/turbineguard/`$`{{ env.IMAGE_NAME }}:latest
     
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy ${{ env.SERVICE_NAME }} --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest --platform managed --region ${{ env.REGION }} --allow-unauthenticated --port 8501 --memory 2Gi --cpu 1 --timeout 300
-'@ | Out-File -FilePath .github\workflows\deploy.yml -Encoding utf8
+        gcloud run deploy `$`{{ env.SERVICE_NAME }} --image `$`{{ env.REGION }}-docker.pkg.dev/`$`{{ env.PROJECT_ID }}/turbineguard/`$`{{ env.IMAGE_NAME }}:latest --platform managed --region `$`{{ env.REGION }} --allow-unauthenticated --port 8501 --memory 2Gi --cpu 1 --timeout 300
+"@
+
+Set-Content -Path .github\workflows\deploy.yml -Value $yamlContent -Encoding utf8
