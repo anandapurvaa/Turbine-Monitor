@@ -41,6 +41,11 @@ jobs:
     
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy ${{ env.SERVICE_NAME }} --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest --platform managed --region ${{ env.REGION }} --allow-unauthenticated --port 8050 --memory 2Gi --cpu 1 --timeout 300
-
-#test2
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest \
+          --platform managed \
+          --region ${{ env.REGION }} \
+          --allow-unauthenticated \
+          --memory 2Gi \
+          --cpu 1 \
+          --timeout 300

@@ -1,63 +1,109 @@
 from pathlib import Path
-from mcp.server.fastmcp import FastMCP
-import pandas as pd
-import numpy as np
 
-# Initialize FastMCP server
+import pandas as pd
+from mcp.server.fastmcp import FastMCP
+
+
 mcp = FastMCP("sensor-stream-server")
 
-# Load test data for mock streaming
-TEST_DATA_PATH = Path("data/processed/test_FD001_processed.csv")
-test_data = pd.read_csv(TEST_DATA_PATH)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = PROJECT_ROOT / "data" / "processed"
+
+VALID_DATASETS = {"FD001", "FD002", "FD003", "FD004"}
+OP_COLUMNS = ["op_setting_1", "op_setting_2", "op_setting_3"]
+SENSOR_COLUMNS = [f"sensor_{i}" for i in range(1, 22)]
+
+_data_cache: dict[str, pd.DataFrame] = {}
+
+
+def load_dataset(dataset: str) -> pd.DataFrame:
+    dataset = dataset.upper()
+
+    if dataset not in VALID_DATASETS:
+        raise ValueError(
+            f"Unsupported dataset '{dataset}'. "
+            f"Choose one of: {sorted(VALID_DATASETS)}"
+        )
+
+    if dataset not in _data_cache:
+        path = DATA_DIR / f"test_{dataset}_processed.csv"
+
+        if not path.exists():
+            raise FileNotFoundError(f"Processed test data not found: {path}")
+
+        _data_cache[dataset] = pd.read_csv(path)
+
+    return _data_cache[dataset]
 
 
 @mcp.tool()
-def get_latest_readings(engine_id: int, num_cycles: int = 10) -> dict:
+def get_latest_readings(
+    engine_id: int,
+    dataset: str = "FD001",
+    num_cycles: int = 36,
+) -> dict:
     """
-    Get recent sensor readings for a specific engine.
-    
-    Args:
-        engine_id: Engine unit number
-        num_cycles: Number of recent cycles to return (default: 10)
-    
-    Returns:
-        Sensor readings with metadata
+    Return the latest time-ordered cycles for one engine.
+
+    Includes three operating settings and 21 sensors for each cycle, which
+    provides the 24-channel PatchTST model input.
     """
-    engine_data = test_data[test_data["unit_nr"] == engine_id].tail(num_cycles)
-    
+    df = load_dataset(dataset)
+    engine_data = (
+        df[df["unit_nr"] == engine_id]
+        .sort_values("time_in_cycles")
+        .tail(num_cycles)
+    )
+
     if engine_data.empty:
         return {
-            "error": f"Engine {engine_id} not found",
-            "available_engines": sorted(test_data["unit_nr"].unique().tolist())
+            "error": f"Engine {engine_id} not found in {dataset}",
+            "available_engines": sorted(df["unit_nr"].unique().tolist()),
         }
-    
-    sensor_cols = [f"sensor_{i}" for i in range(1, 22)]
-    
+
+    feature_columns = OP_COLUMNS + SENSOR_COLUMNS
+
+    readings = []
+    for _, row in engine_data.iterrows():
+        readings.append(
+            {
+                "cycle": int(row["time_in_cycles"]),
+                "operating_settings": {
+                    column: float(row[column])
+                    for column in OP_COLUMNS
+                },
+                "sensors": {
+                    column: float(row[column])
+                    for column in SENSOR_COLUMNS
+                },
+            }
+        )
+
+    latest = engine_data.iloc[-1]
+
     return {
-        "engine_id": engine_id,
-        "num_cycles": len(engine_data),
-        "latest_cycle": int(engine_data["time_in_cycles"].iloc[-1]),
-        "current_rul": float(engine_data["RUL_capped"].iloc[-1]),
-        "sensors": {
-            col: float(engine_data[col].iloc[-1])
-            for col in sensor_cols
+        "dataset": dataset.upper(),
+        "engine_id": int(engine_id),
+        "num_cycles": int(len(engine_data)),
+        "latest_cycle": int(latest["time_in_cycles"]),
+        "feature_columns": feature_columns,
+        "readings": readings,
+        "latest_operating_settings": {
+            column: float(latest[column])
+            for column in OP_COLUMNS
         },
-        "recent_trend": {
-            col: float(engine_data[col].iloc[-1] - engine_data[col].iloc[0])
-            for col in sensor_cols
-        }
+        "latest_sensors": {
+            column: float(latest[column])
+            for column in SENSOR_COLUMNS
+        },
     }
 
 
 @mcp.tool()
-def list_engines() -> list[int]:
-    """
-    List all available engine IDs in the system.
-    
-    Returns:
-        Sorted list of engine unit numbers
-    """
-    return sorted(test_data["unit_nr"].unique().tolist())
+def list_engines(dataset: str = "FD001") -> list[int]:
+    """List available engine IDs for a selected C-MAPSS dataset."""
+    df = load_dataset(dataset)
+    return sorted(df["unit_nr"].unique().tolist())
 
 
 if __name__ == "__main__":
