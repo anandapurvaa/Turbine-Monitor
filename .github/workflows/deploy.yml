@@ -22,17 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Debug OIDC Token
-      run: |
-        echo "Token URL: $ACTIONS_ID_TOKEN_REQUEST_URL"
-        echo "Token exists: $([string]::IsNullOrEmpty('$ACTIONS_ID_TOKEN_REQUEST_TOKEN'))"
-    
     - name: Authenticate with Google Cloud
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/20298064017/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider-v2
         service_account: ${{ env.SERVICE_ACCOUNT }}
-        create_credentials_file: false
+        token_format: access_token
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
