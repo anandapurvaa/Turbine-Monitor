@@ -53,5 +53,3 @@ jobs:
           --task-timeout 1h \
           --max-retries 1 \
           --set-env-vars GCS_BUCKET=turbineguard-data
-
-#test
