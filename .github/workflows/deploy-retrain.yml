@@ -17,7 +17,6 @@ env:
   REGION: europe-west3
   JOB_NAME: turbineguard-retrain
   IMAGE_NAME: retrain
-  SERVICE_ACCOUNT: github-actions@cloudprojects-506123.iam.gserviceaccount.com
 
 jobs:
   deploy:
@@ -30,7 +29,7 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/20298064017/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider-v3
-        service_account: ${{ env.SERVICE_ACCOUNT }}
+        service_account: github-actions@cloudprojects-506123.iam.gserviceaccount.com
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
