@@ -442,7 +442,8 @@ body {
    9. THRESHOLD SLIDER (rc-slider)
    --------------------------------------------------------------------------- */
 .sidebar .rc-slider {
-    margin: var(--space-2) 0 var(--space-5) 0;
+  margin: var(--space-3) 0 40px 0;
+  height: 4px;
 }
 
 .sidebar .rc-slider-rail {
@@ -466,19 +467,24 @@ body {
 
 .sidebar .rc-slider-handle,
 .sidebar .rc-slider-handle-dragging {
-    width: 16px;
-    height: 16px;
-    margin-top: -6px;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
     background-color: var(--bg-void);
     border: 2px solid var(--accent-copper);
-    box-shadow: 0 0 0 4px var(--accent-copper-dim) !important;
+    box-shadow: 0 0 0 3px var(--accent-copper-dim) !important;
     opacity: 1;
+}
+
+.sidebar .rc-slider-mark {
+    top: 18px;
 }
 
 .sidebar .rc-slider-mark-text {
     color: var(--text-tertiary);
     font-family: var(--font-mono);
     font-size: 10px;
+    white-space: nowrap;
 }
 
 .sidebar .rc-slider-mark-text-active {
@@ -609,7 +615,7 @@ body {
 
 /* Twin cards: work order + manuals */
 .card-section {
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-6);
     display: flex;
     gap: var(--space-4);
     align-items: stretch;
@@ -782,7 +788,7 @@ body {
    12. FLEET OVERVIEW / KPIs
    --------------------------------------------------------------------------- */
 .fleet-overview {
-    margin-top: 0;
+    margin-top: var(--space-5);
 }
 
 .kpi-container {
