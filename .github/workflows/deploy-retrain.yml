@@ -46,10 +46,10 @@ jobs:
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest
 
     - name: Deploy Cloud Run Job
-    run: |
-      gcloud run jobs deploy ${{ env.JOB_NAME }} \
-        --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest \
-        --region ${{ env.REGION }} \
-        --task-timeout 1h \
-        --max-retries 1 \
-        --set-env-vars GCS_BUCKET=turbineguard-data
+      run: |
+        gcloud run jobs deploy ${{ env.JOB_NAME }} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/turbineguard/${{ env.IMAGE_NAME }}:latest \
+          --region ${{ env.REGION }} \
+          --task-timeout 1h \
+          --max-retries 1 \
+          --set-env-vars GCS_BUCKET=turbineguard-data
