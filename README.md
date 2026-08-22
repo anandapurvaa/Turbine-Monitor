@@ -220,7 +220,6 @@ gcloud run jobs deploy turbineguard-retrain \
   --region europe-west3 \
   --task-timeout 1h \
   --max-retries 1 \
-  --service-account github-actions@cloudprojects-506123.iam.gserviceaccount.com \
   --set-env-vars GCS_BUCKET=turbineguard-data
 ```
 
@@ -358,7 +357,8 @@ TurbineMonitor/
 │  └─ train_model.py         # Training script
 ├─ .github/
 │  └─ workflows/
-│     └─ deploy_dashboard.yml # CI/CD for dashboard
+│     ├─ deploy_dashboard.yml # CI/CD for dashboard
+│     └─ deploy-retrain.yml   # CI/CD for retraining job
 ├─ monitoring-dashboard.json  # Cloud Monitoring dashboard config
 └─ README.md
 ```
@@ -460,35 +460,48 @@ Then open `http://127.0.0.1:8050` in your browser.
 
 Experiments with PatchTST on the C-MAPSS datasets yielded several insights:
 
-1. **Strong Performance on FD001**
-   - FD001 (single operating condition, single fault) is the easiest setting.
-   - PatchTST achieved low MAE and RMSE, often in the range of:
-     - **Test MAE ≈ 13–16**
-     - **Test RMSE ≈ 18–21**
-   - Predicted RUL curves closely follow true degradation trajectories.
+### 1. Final Model Performance (context length = 56)
 
-2. **Increased Difficulty with Multiple Conditions/Faults**
-   - FD002 and FD004 (multiple operating conditions) show higher errors.
-   - FD003 and FD004 (multiple fault modes) introduce more complex degradation patterns.
-   - MAE and RMSE increase compared to FD001, but remain meaningful for maintenance planning.
+Using the final configuration (lookback window = 56, larger PatchTST encoder, SmoothL1 loss, and cosine LR schedule), the model achieved:
 
-3. **Effect of Lookback Window and Patch Size**
-   - Longer lookback windows generally improve performance up to a point, then plateau.
-   - Patch size influences how well the model captures local vs. global patterns.
-   - Tuning these hyperparameters is critical for each dataset.
+| Dataset | Test MAE | Test RMSE |
+|---------|----------|-----------|
+| FD001   | 11.38    | 14.60     |
+| FD002   | 14.81    | 19.84     |
+| FD003   | 11.76    | 16.50     |
+| FD004   | 10.98    | 17.81     |
 
-4. **Benefits of Automated Retraining**
-   - Periodic retraining ensures models adapt to new data or configuration changes.
-   - Cloud Run Jobs provide a simple, serverless way to run batch training.
-   - Cloud Scheduler guarantees regular execution without manual intervention.
+These results are competitive with recent deep learning baselines on C-MAPSS, especially considering the use of a single transformer model without heavy ensembling or extensive hand‑crafted features.
 
-5. **End‑to‑End MLOps Pipeline**
-   - The project demonstrates a complete MLOps workflow:
-     - Data versioning in GCS.
-     - Reproducible training scripts.
-     - CI/CD for dashboard deployment.
-     - Scheduled retraining and monitoring.
-   - This architecture is directly applicable to real‑world predictive maintenance systems.
+### 2. Strong Performance on FD001 and FD004
+
+- **FD001** (single operating condition, single fault) showed low MAE and RMSE, with predicted RUL curves closely following true degradation trajectories.
+- **FD004** (multiple operating conditions, multiple fault modes) achieved the **lowest MAE** (10.98) despite being the most complex dataset, indicating that the combination of regime‑aware normalization and a deeper PatchTST encoder effectively captures heterogeneous degradation patterns.
+
+### 3. Balanced Accuracy Across All Datasets
+
+- **FD002** (multiple operating conditions) and **FD003** (single condition, multiple faults) exhibited slightly higher MAE than FD001 but remained in a tight range (≈ 11–15), demonstrating robust generalization across different fault and operating regimes.
+- The regime‑aware K‑Means normalization was particularly beneficial for FD002 and FD004, where distinct operating conditions would otherwise degrade performance.
+
+### 4. Effect of Lookback Window and Model Capacity
+
+- Increasing the context length from 36 to **56 cycles** allowed the model to observe longer degradation histories, improving RUL estimates especially for engines with gradual failure patterns.
+- A larger encoder (d_model = 256, 4 layers, 8 attention heads) provided sufficient capacity to model complex temporal dependencies without overfitting, as evidenced by consistent validation and test metrics.
+
+### 5. Benefits of Automated Retraining
+
+- Periodic retraining ensures models adapt to new data or configuration changes.
+- Cloud Run Jobs provide a simple, serverless way to run batch training.
+- Cloud Scheduler guarantees regular execution without manual intervention.
+
+### 6. End‑to‑End MLOps Pipeline
+
+- The project demonstrates a complete MLOps workflow:
+  - Data versioning in GCS.
+  - Reproducible training scripts.
+  - CI/CD for dashboard and retraining job deployment.
+  - Scheduled retraining and monitoring.
+- This architecture is directly applicable to real‑world predictive maintenance systems.
 
 ---
 
@@ -509,7 +522,7 @@ Potential extensions to further improve TurbineGuard:
   - Track data drift in sensor distributions over time.
 
 - **User‑Facing Improvements**
-  - Add “what‑if” scenarios (e.g., simulate maintenance actions).
+  - Add "what‑if" scenarios (e.g., simulate maintenance actions).
   - Export predictions and reports for integration with maintenance systems.
 
 ---

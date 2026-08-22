@@ -1,298 +1,770 @@
-/* TurbineGuard AI Dashboard Styles */
+/* ============================================================================
+   TURBINEGUARD AI — INSTRUMENT PANEL THEME
+   ----------------------------------------------------------------------------
+   Design language: a jet-engine control room, not a web app. The signature
+   element is the radial RUL gauge (a CSS conic-gradient tachometer) in the
+   sidebar; every other surface stays quiet — flat panels, hairline borders,
+   a restrained cyan / copper / amber accent set — so the gauge reads as the
+   one instrument the eye is drawn to.
+   ============================================================================ */
 
-/* Header */
-.dashboard-header {
-    background-color: #f8f9fa;
-    padding: 20px 30px;
-    border-bottom: 2px solid #1f77b4;
-    margin-bottom: 20px;
+/* ---------------------------------------------------------------------------
+   1. DESIGN TOKENS
+   --------------------------------------------------------------------------- */
+:root {
+    /* Surfaces */
+    --bg-void: #0a0d12;
+    --bg-panel: #12161d;
+    --bg-panel-raised: #171c26;
+    --bg-panel-hover: #1c2230;
+    --bg-input: #0d1017;
+
+    /* Borders */
+    --border-hairline: rgba(148, 163, 184, 0.10);
+    --border-hairline-strong: rgba(148, 163, 184, 0.20);
+
+    /* Text */
+    --text-primary: #e8ecf1;
+    --text-secondary: #8b95a7;
+    --text-tertiary: #565f72;
+
+    /* Accents — instrumentation palette (titanium cyan + brass copper) */
+    --accent-cyan: #2dd4dd;
+    --accent-cyan-dim: rgba(45, 212, 221, 0.14);
+    --accent-copper: #c98a4b;
+    --accent-copper-dim: rgba(201, 138, 75, 0.16);
+
+    /* Status */
+    --status-critical: #e5484d;
+    --status-critical-dim: rgba(229, 72, 77, 0.14);
+    --status-warning: #e8a33d;
+    --status-warning-dim: rgba(232, 163, 61, 0.14);
+    --status-healthy: #3ecf8e;
+    --status-healthy-dim: rgba(62, 207, 142, 0.14);
+    --status-neutral: #565f72;
+    --status-neutral-dim: rgba(86, 95, 114, 0.14);
+
+    /* Type */
+    --font-display: 'Chakra Petch', 'Inter', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+    /* Rhythm */
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+
+    /* Elevation */
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 28px -16px rgba(0, 0, 0, 0.65);
+    --shadow-panel-hover: 0 1px 2px rgba(0, 0, 0, 0.5), 0 20px 36px -16px rgba(0, 0, 0, 0.75);
+
+    --transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-med: 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dashboard-header h1 {
-    margin: 0;
-    color: #1f77b4;
+/* ---------------------------------------------------------------------------
+   2. RESET & BASE
+   --------------------------------------------------------------------------- */
+* {
+    box-sizing: border-box;
 }
 
-.dashboard-header p {
-    margin: 5px 0 0 0;
-    color: #666;
-    font-size: 14px;
+html {
+    background-color: var(--bg-void);
 }
 
-/* Sidebar */
-.sidebar {
-    width: 280px;
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.sidebar h3 {
-    color: #333;
-    margin-bottom: 15px;
-}
-
-.sidebar label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 8px;
-}
-
-/* Metric cards */
-.metric-card {
-    text-align: center;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-
-.metric-card-rul {
-    background: #f0f7ff;
-}
-
-.metric-card-cycle {
-    background: #f0fff0;
-}
-
-.metric-label {
-    font-size: 12px;
-    color: #666;
-}
-
-.metric-value {
-    font-size: 28px;
-    font-weight: bold;
-    margin: 5px 0;
-}
-
-.metric-value-rul {
-    color: #1f77b4;
-}
-
-.metric-value-cycle {
-    color: #2ca02c;
-}
-
-.metric-unit {
-    font-size: 12px;
-    color: #666;
-}
-
-/* Run button */
-.run-button {
-    width: 100%;
-    padding: 12px;
-    background-color: #1f77b4;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-.run-button:hover {
-    background-color: #155a8a;
-}
-
-/* Status message */
-.status-message {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: center;
-}
-
-.status-success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-/* Main content */
-.main-content {
-    width: calc(100% - 340px);
-    display: inline-block;
-    vertical-align: top;
-    padding: 20px;
-}
-
-/* Agent decision banner */
-.agent-decision-section {
-    margin-bottom: 20px;
-}
-
-.agent-decision-section h3 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-.agent-decision-banner {
-    padding: 20px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.agent-decision-anomaly {
-    background: #fff5f5;
-    border: 2px solid #ffcccc;
-}
-
-.agent-decision-healthy {
-    background: #f0fff0;
-    border: 2px solid #cce5cc;
-}
-
-/* Cards */
-.card-section {
-    margin-bottom: 20px;
-}
-
-.card-section h3 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-.work-order-card {
-    background: #fff5f5;
-    border: 2px solid #ffcccc;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.manuals-card {
-    background: #f0f7ff;
-    border: 2px solid #cce5ff;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.work-order-metrics {
-    margin-bottom: 15px;
-}
-
-.work-order-metric {
-    width: 30%;
-    display: inline-block;
-    text-align: center;
-}
-
-.work-order-label {
-    font-size: 12px;
-    color: #666;
-}
-
-.work-order-value {
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 5px;
-}
-
-/* Fleet overview */
-.fleet-overview {
-    margin-top: 20px;
-}
-
-.fleet-overview h3 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-.kpi-container {
-    margin-bottom: 20px;
-}
-
-.kpi-card {
-    width: 30%;
-    display: inline-block;
-    text-align: center;
-    padding: 20px;
-    border-radius: 8px;
-    margin-right: 3%;
-}
-
-.kpi-card:last-child {
-    margin-right: 0;
-}
-
-.kpi-total {
-    background: #f0f7ff;
-}
-
-.kpi-high-risk {
-    background: #fff5f5;
-}
-
-.kpi-avg {
-    background: #f0fff0;
-}
-
-.kpi-label {
-    font-size: 14px;
-    color: #666;
-}
-
-.kpi-value {
-    font-size: 32px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-.kpi-value-total {
-    color: #1f77b4;
-}
-
-.kpi-value-high-risk {
-    color: #d62728;
-}
-
-.kpi-value-avg {
-    color: #2ca02c;
-}
-
-/* Chart container */
-.chart-container {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.chart-container h4 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-/* Footer */
-.dashboard-footer {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-top: 1px solid #ddd;
-    margin-top: 20px;
-}
-
-.dashboard-footer p {
-    text-align: center;
-    color: #666;
-    font-size: 12px;
+body {
     margin: 0;
 }
 
-/* Main container */
+::selection {
+    background: var(--accent-cyan-dim);
+    color: var(--text-primary);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--bg-panel-hover);
+    border-radius: 8px;
+    border: 2px solid var(--bg-void);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hairline-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   3. SHELL
+   --------------------------------------------------------------------------- */
 .dashboard-container {
-    font-family: Arial, sans-serif;
-    background-color: #f5f6fa;
+    font-family: var(--font-body);
+    background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(45, 212, 221, 0.05), transparent 60%),
+        radial-gradient(900px 500px at 100% 0%, rgba(201, 138, 75, 0.045), transparent 55%),
+        var(--bg-void);
+    color: var(--text-primary);
     min-height: 100vh;
-    padding: 0 30px 30px 30px;
+    padding: 0 var(--space-6) var(--space-6) var(--space-6);
+    -webkit-font-smoothing: antialiased;
 }
 
 .main-layout {
     display: flex;
+    gap: var(--space-5);
+    align-items: flex-start;
 }
 
-/* Manual list */
+/* ---------------------------------------------------------------------------
+   4. HEADER — wordmark, no icon. Restraint over decoration.
+   --------------------------------------------------------------------------- */
+.dashboard-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border-hairline);
+    padding: var(--space-5) var(--space-1) var(--space-4) var(--space-1);
+    margin-bottom: var(--space-5);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+}
+
+.dashboard-header h1 .brand-accent {
+    color: var(--accent-cyan);
+}
+
+.dashboard-header p {
+    margin: var(--space-1) 0 0 0;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+}
+
+.header-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.header-status-pill .led-dot {
+    width: 7px;
+    height: 7px;
+}
+
+/* ---------------------------------------------------------------------------
+   5. SECTION HEADINGS — a left accent bar stands in for iconography
+   --------------------------------------------------------------------------- */
+.sidebar h3,
+.card-section h3,
+.fleet-overview h3,
+.agent-decision-section h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-3) 0;
+    padding-left: var(--space-3);
+    border-left: 3px solid var(--accent-cyan);
+    line-height: 1.4;
+}
+
+.chart-container h4 {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-3) 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+   6. SIDEBAR / INSTRUMENT PANEL
+   --------------------------------------------------------------------------- */
+.sidebar {
+    width: 300px;
+    flex: 0 0 300px;
+    padding: var(--space-5);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+    position: sticky;
+    top: var(--space-5);
+}
+
+.sidebar label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    display: block;
+    margin: var(--space-4) 0 var(--space-2) 0;
+}
+
+.sidebar h3:first-child {
+    margin-top: 0;
+}
+
+/* Dropdowns (dash-core-components Select) */
+.sidebar .Select-control,
+.sidebar .dash-dropdown .Select-control {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-hairline-strong) !important;
+    border-radius: var(--radius-sm) !important;
+    min-height: 40px !important;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.sidebar .Select-control:hover {
+    border-color: var(--accent-cyan) !important;
+}
+
+.sidebar .is-focused > .Select-control,
+.sidebar .is-open > .Select-control {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 3px var(--accent-cyan-dim) !important;
+}
+
+.sidebar .Select-value-label,
+.sidebar .Select-input > input {
+    color: var(--text-primary) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+}
+
+.sidebar .Select-placeholder {
+    color: var(--text-tertiary) !important;
+}
+
+.sidebar .Select-arrow {
+    border-color: var(--text-tertiary) transparent transparent !important;
+}
+
+.sidebar .Select-menu-outer {
+    background-color: var(--bg-panel-raised) !important;
+    border: 1px solid var(--border-hairline-strong) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: var(--shadow-panel-hover) !important;
+    overflow: hidden;
+    margin-top: 4px !important;
+}
+
+.sidebar .Select-option {
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+    padding: 10px 12px !important;
+}
+
+.sidebar .Select-option.is-focused,
+.sidebar .Select-option:hover {
+    background-color: var(--bg-panel-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+.sidebar .Select-option.is-selected {
+    background-color: var(--accent-cyan-dim) !important;
+    color: var(--accent-cyan) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   7. SIGNATURE ELEMENT — radial RUL gauge (CSS conic-gradient tachometer)
+   --------------------------------------------------------------------------- */
+.gauge-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-4) 0 var(--space-3) 0;
+    padding: var(--space-4);
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-md);
+}
+
+.gauge-container {
+    position: relative;
+    width: 108px;
+    height: 108px;
+    flex: 0 0 108px;
+}
+
+.gauge-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--gauge-color, var(--status-neutral)) calc(var(--gauge-value, 0) * 1%),
+        rgba(255, 255, 255, 0.05) 0
+    );
+    transition: background var(--transition-med);
+}
+
+.gauge-ring::before {
+    /* tick marks around the rim, evoking an engine tachometer */
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background:
+        repeating-conic-gradient(
+            var(--bg-void) 0deg 1.2deg,
+            transparent 1.2deg 30deg
+        );
+    opacity: 0.55;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+
+.gauge-inner {
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: var(--bg-panel-raised);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.gauge-value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.gauge-caption {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+.gauge-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.gauge-meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-2);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.status-critical { background: var(--status-critical-dim); color: var(--status-critical); }
+.status-warning  { background: var(--status-warning-dim);  color: var(--status-warning); }
+.status-healthy  { background: var(--status-healthy-dim);  color: var(--status-healthy); }
+.status-neutral  { background: var(--status-neutral-dim);  color: var(--text-tertiary); }
+
+.led-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+    flex: none;
+}
+
+.status-critical .led-dot {
+    animation: pulse-critical 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+/* ---------------------------------------------------------------------------
+   8. SECONDARY METRIC TILES (cycle / regime)
+   --------------------------------------------------------------------------- */
+.tile-row {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.metric-tile {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    text-align: left;
+}
+
+.metric-tile-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+}
+
+.metric-tile-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   9. THRESHOLD SLIDER (rc-slider)
+   --------------------------------------------------------------------------- */
+.sidebar .rc-slider {
+    margin: var(--space-2) 0 var(--space-5) 0;
+}
+
+.sidebar .rc-slider-rail {
+    background-color: var(--bg-panel-raised);
+    height: 4px;
+    border: 1px solid var(--border-hairline);
+}
+
+.sidebar .rc-slider-track {
+    background-color: var(--accent-copper);
+    height: 4px;
+}
+
+.sidebar .rc-slider-step {
+    height: 4px;
+}
+
+.sidebar .rc-slider-dot {
+    display: none;
+}
+
+.sidebar .rc-slider-handle,
+.sidebar .rc-slider-handle-dragging {
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    background-color: var(--bg-void);
+    border: 2px solid var(--accent-copper);
+    box-shadow: 0 0 0 4px var(--accent-copper-dim) !important;
+    opacity: 1;
+}
+
+.sidebar .rc-slider-mark-text {
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+}
+
+.sidebar .rc-slider-mark-text-active {
+    color: var(--text-secondary);
+}
+
+.sidebar .rc-slider-tooltip-inner {
+    background-color: var(--bg-panel-raised);
+    border: 1px solid var(--accent-copper);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    box-shadow: none;
+}
+
+.sidebar .rc-slider-tooltip-arrow {
+    border-top-color: var(--accent-copper);
+}
+
+/* ---------------------------------------------------------------------------
+   10. RUN BUTTON
+   --------------------------------------------------------------------------- */
+.run-button {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent-cyan);
+    color: var(--bg-void);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: var(--space-2);
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.run-button:hover {
+    background: #57e0e7;
+    box-shadow: 0 0 0 4px var(--accent-cyan-dim);
+}
+
+.run-button:active {
+    transform: translateY(1px);
+}
+
+/* Status message under the button */
+.status-message {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    text-align: left;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border: 1px solid transparent;
+}
+
+.status-message:empty {
+    display: none;
+}
+
+.status-success {
+    background: var(--status-healthy-dim);
+    color: var(--status-healthy);
+    border-color: rgba(62, 207, 142, 0.3);
+}
+
+.status-error {
+    background: var(--status-critical-dim);
+    color: var(--status-critical);
+    border-color: rgba(229, 72, 77, 0.3);
+}
+
+/* ---------------------------------------------------------------------------
+   11. MAIN CONTENT
+   --------------------------------------------------------------------------- */
+.main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.agent-decision-section {
+    margin-bottom: var(--space-5);
+}
+
+/* Agent decision banner — a status "strip" rather than a solid color block */
+.decision-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-left: 4px solid var(--status-neutral);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-panel);
+}
+
+.decision-strip.status-critical { border-left-color: var(--status-critical); }
+.decision-strip.status-warning  { border-left-color: var(--status-warning); }
+.decision-strip.status-healthy  { border-left-color: var(--status-healthy); }
+
+.decision-strip-badge {
+    flex: none;
+}
+
+.decision-strip-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.decision-strip-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.4px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.decision-strip-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Twin cards: work order + manuals */
+.card-section {
+    margin-bottom: var(--space-5);
+    display: flex;
+    gap: var(--space-4);
+    align-items: stretch;
+}
+
+.card-section > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.work-order-card,
+.manuals-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-panel);
+    height: 100%;
+    transition: box-shadow var(--transition-med);
+}
+
+.work-order-card:hover,
+.manuals-card:hover {
+    box-shadow: var(--shadow-panel-hover);
+}
+
+.work-order-simulated-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--border-hairline);
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: var(--space-4);
+}
+
+.work-order-metrics {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.work-order-metric {
+    flex: 1;
+    text-align: left;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+}
+
+.work-order-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+}
+
+.work-order-value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.priority-pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+
+.priority-HIGH   { background: var(--status-critical-dim); color: var(--status-critical); }
+.priority-MEDIUM { background: var(--status-warning-dim);  color: var(--status-warning); }
+.priority-LOW    { background: var(--status-healthy-dim);  color: var(--status-healthy); }
+
+.work-order-description-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+}
+
+.work-order-description {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.empty-state.is-positive {
+    color: var(--status-healthy);
+}
+
+/* Retrieved manuals list */
 .manual-list {
     list-style: none;
     padding: 0;
@@ -300,16 +772,152 @@
 }
 
 .manual-item {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border-hairline);
+}
+
+.manual-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.manual-item:first-child {
+    padding-top: 0;
+}
+
+.manual-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: 6px;
 }
 
 .manual-title {
-    font-weight: bold;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .manual-score {
-    color: #666;
-    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    font-size: 11px;
+    flex: none;
+}
+
+.manual-score-track {
+    height: 3px;
+    background: var(--bg-panel-raised);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.manual-score-fill {
+    height: 100%;
+    background: var(--accent-cyan);
+    border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   12. FLEET OVERVIEW / KPIs
+   --------------------------------------------------------------------------- */
+.fleet-overview {
+    margin-top: 0;
+}
+
+.kpi-container {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.kpi-card {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-4);
+    box-shadow: var(--shadow-panel);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-panel-hover);
+}
+
+.kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-2);
+}
+
+.kpi-value {
+    font-family: var(--font-mono);
+    font-size: 30px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.kpi-value-total    { color: var(--text-primary); }
+.kpi-value-high-risk{ color: var(--status-critical); }
+.kpi-value-avg       { color: var(--accent-cyan); }
+
+.kpi-unit {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    margin-left: 4px;
+}
+
+.chart-container {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-4) var(--space-2) var(--space-4);
+    box-shadow: var(--shadow-panel);
+}
+
+/* ---------------------------------------------------------------------------
+   13. FOOTER
+   --------------------------------------------------------------------------- */
+.dashboard-footer {
+    background: transparent;
+    padding: var(--space-4) 0 0 0;
+    border-top: 1px solid var(--border-hairline);
+    margin-top: var(--space-5);
+}
+
+.dashboard-footer p {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   14. RESPONSIVE
+   --------------------------------------------------------------------------- */
+@media (max-width: 980px) {
+    .main-layout {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        flex: 1 1 auto;
+        position: static;
+    }
+    .card-section {
+        flex-direction: column;
+    }
+    .kpi-container {
+        flex-direction: column;
+    }
 }

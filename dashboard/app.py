@@ -20,9 +20,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 DATASETS = ["FD001", "FD002", "FD003", "FD004"]
 
+# C-MAPSS RUL labels are conventionally clipped at 125 cycles during training
+# (the piecewise-linear degradation target used across most published PatchTST /
+# LSTM baselines on this dataset). The radial gauge below uses that same 125-cycle
+# ceiling as its full-scale mark, so a "full" gauge means "as healthy as the
+# model is ever trained to predict" rather than an arbitrary UI maximum.
+RUL_GAUGE_MAX = 125
+
 _data_cache: dict[str, pd.DataFrame] = {}
 
 
+# -----------------------------------------------------------------------------
+# Data helpers (unchanged business logic)
+# -----------------------------------------------------------------------------
 def load_dataset(dataset: str) -> pd.DataFrame:
     """Load and cache a processed C-MAPSS test set."""
     dataset = dataset.upper()
@@ -48,15 +58,110 @@ def engine_options(dataset: str):
     ]
 
 
-def risk_label(predicted_rul: float, threshold: float) -> tuple[str, str, str]:
+def risk_status(predicted_rul: float, threshold: float) -> str:
+    """Map a predicted RUL to a status key used to drive gauge / pill colors."""
     if predicted_rul < 15:
-        return "CRITICAL", "#d62728", "⚠️"
+        return "critical"
     if predicted_rul < threshold:
-        return "WARNING", "#ff7f0e", "⚠️"
-    return "HEALTHY", "#2ca02c", "✅"
+        return "warning"
+    return "healthy"
 
 
-app = dash.Dash(__name__, suppress_callback_exceptions=True)
+STATUS_LABEL = {
+    "critical": "CRITICAL",
+    "warning": "WARNING",
+    "healthy": "HEALTHY",
+    "neutral": "STANDBY",
+}
+
+
+# -----------------------------------------------------------------------------
+# Small component builders (display-only helpers — no business logic here)
+# -----------------------------------------------------------------------------
+def build_status_pill(status: str, text: str | None = None):
+    return html.Div(
+        [
+            html.Span(className="led-dot"),
+            html.Span(text or STATUS_LABEL.get(status, status.upper())),
+        ],
+        className=f"status-pill status-{status}",
+    )
+
+
+def build_gauge(value: float, caption: str, status: str = "neutral", max_scale: float = RUL_GAUGE_MAX):
+    percent = max(0.0, min(value / max_scale, 1.0)) * 100 if max_scale else 0
+    return html.Div(
+        [
+            html.Div(
+                className="gauge-ring",
+                style={
+                    "--gauge-value": f"{percent:.1f}",
+                    "--gauge-color": f"var(--status-{status})" if status != "neutral" else "var(--status-neutral)",
+                },
+            ),
+            html.Div(
+                [
+                    html.Div(f"{value:.0f}", className="gauge-value"),
+                    html.Div(caption, className="gauge-caption"),
+                ],
+                className="gauge-inner",
+            ),
+        ],
+        className="gauge-container",
+    )
+
+
+def build_gauge_row(value: float, status: str, latest_cycle, regime):
+    return html.Div(
+        [
+            build_gauge(value, "cycles left", status),
+            html.Div(
+                [
+                    html.Div("Predicted RUL", className="gauge-meta-label"),
+                    build_status_pill(status),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Div("Cycle", className="metric-tile-label"),
+                                    html.Div(str(latest_cycle), className="metric-tile-value"),
+                                ],
+                                className="metric-tile",
+                            ),
+                            html.Div(
+                                [
+                                    html.Div("Regime", className="metric-tile-label"),
+                                    html.Div(str(regime), className="metric-tile-value"),
+                                ],
+                                className="metric-tile",
+                            ),
+                        ],
+                        className="tile-row",
+                        style={"marginTop": "12px", "marginBottom": "0"},
+                    ),
+                ],
+                className="gauge-meta",
+            ),
+        ],
+        className="gauge-row",
+    )
+
+
+def build_empty_state(text: str, positive: bool = False):
+    classes = "empty-state is-positive" if positive else "empty-state"
+    return html.Div(text, className=classes)
+
+
+app = dash.Dash(
+    __name__,
+    suppress_callback_exceptions=True,
+    external_stylesheets=[
+        "https://fonts.googleapis.com/css2?"
+        "family=Chakra+Petch:wght@500;600;700&"
+        "family=Inter:wght@400;500;600;700&"
+        "family=JetBrains+Mono:wght@500;600;700&display=swap"
+    ],
+)
 app.title = "TurbineGuard AI | Predictive Maintenance"
 
 default_dataset = "FD004"
@@ -67,10 +172,18 @@ app.layout = html.Div(
     [
         html.Div(
             [
-                html.H1("⚙️ TurbineGuard AI"),
-                html.P(
-                    "PatchTST RUL Prediction + Agentic Root-Cause Diagnosis "
-                    "+ Proposed Maintenance Dispatch"
+                html.Div(
+                    [
+                        html.H1(["TURBINE", html.Span("GUARD", className="brand-accent")]),
+                        html.P("PatchTST RUL Prediction · Agentic Root-Cause Diagnosis · Maintenance Dispatch"),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.Span(className="led-dot"),
+                        html.Span("SIMULATED ENVIRONMENT"),
+                    ],
+                    className="header-status-pill",
                 ),
             ],
             className="dashboard-header",
@@ -82,7 +195,7 @@ app.layout = html.Div(
                     [
                         html.H3("Model Selection"),
 
-                        html.Label("Dataset / Model:"),
+                        html.Label("Dataset / Model"),
                         dcc.Dropdown(
                             id="dataset-selector",
                             options=[
@@ -96,9 +209,9 @@ app.layout = html.Div(
                             clearable=False,
                         ),
 
-                        html.H3("Engine Selection", style={"marginTop": "25px"}),
+                        html.H3("Engine Selection", style={"marginTop": "28px"}),
 
-                        html.Label("Select Engine ID:"),
+                        html.Label("Select Engine ID"),
                         dcc.Dropdown(
                             id="engine-selector",
                             options=default_engines,
@@ -107,63 +220,11 @@ app.layout = html.Div(
                         ),
 
                         html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            "Predicted RUL",
-                                            className="metric-label",
-                                        ),
-                                        html.Div(
-                                            id="current-rul-display",
-                                            children="—",
-                                            className=(
-                                                "metric-value metric-value-rul"
-                                            ),
-                                        ),
-                                        html.Div(
-                                            "cycles",
-                                            className="metric-unit",
-                                        ),
-                                    ],
-                                    className="metric-card metric-card-rul",
-                                ),
-
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            "Current Cycle",
-                                            className="metric-label",
-                                        ),
-                                        html.Div(
-                                            id="current-cycle-display",
-                                            children="—",
-                                            className=(
-                                                "metric-value metric-value-cycle"
-                                            ),
-                                        ),
-                                    ],
-                                    className="metric-card metric-card-cycle",
-                                ),
-
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            "Operating Regime",
-                                            className="metric-label",
-                                        ),
-                                        html.Div(
-                                            id="regime-display",
-                                            children="—",
-                                            className="metric-value",
-                                        ),
-                                    ],
-                                    className="metric-card",
-                                ),
-                            ]
+                            id="gauge-row-container",
+                            children=build_gauge_row(0, "neutral", "—", "—"),
                         ),
 
-                        html.Label("RUL Threshold (cycles):"),
+                        html.Label("RUL Threshold (cycles)"),
                         dcc.Slider(
                             id="rul-threshold",
                             min=10,
@@ -178,7 +239,7 @@ app.layout = html.Div(
                         ),
 
                         html.Button(
-                            "🔍 Run Model & Agent Analysis",
+                            "Run Model & Agent Analysis",
                             id="run-analysis-btn",
                             n_clicks=0,
                             className="run-button",
@@ -196,17 +257,12 @@ app.layout = html.Div(
                     [
                         html.Div(
                             [
-                                html.H3("🤖 Agent Decision"),
+                                html.H3("Agent Decision"),
                                 html.Div(
                                     id="agent-decision-banner",
-                                    children=html.Div(
-                                        "Choose a dataset and engine, then run "
-                                        "analysis to obtain a PatchTST prediction.",
-                                        style={
-                                            "padding": "30px",
-                                            "textAlign": "center",
-                                            "color": "#999",
-                                        },
+                                    children=build_empty_state(
+                                        "Choose a dataset and engine, then run analysis to obtain a "
+                                        "PatchTST prediction."
                                     ),
                                 ),
                             ],
@@ -217,49 +273,24 @@ app.layout = html.Div(
                             [
                                 html.Div(
                                     [
-                                        html.H3("📋 Proposed Work Order"),
+                                        html.H3("Proposed Work Order"),
                                         html.Div(
                                             id="work-order-card",
-                                            children=html.Div(
-                                                "No maintenance action proposed",
-                                                style={
-                                                    "padding": "40px",
-                                                    "textAlign": "center",
-                                                    "color": "#999",
-                                                },
-                                            ),
+                                            children=build_empty_state("No maintenance action proposed"),
                                             className="work-order-card",
                                         ),
                                     ],
-                                    style={
-                                        "width": "48%",
-                                        "display": "inline-block",
-                                        "verticalAlign": "top",
-                                        "marginRight": "4%",
-                                    },
                                 ),
 
                                 html.Div(
                                     [
-                                        html.H3("📚 Retrieved Manuals"),
+                                        html.H3("Retrieved Manuals"),
                                         html.Div(
                                             id="manuals-card",
-                                            children=html.Div(
-                                                "No manuals retrieved",
-                                                style={
-                                                    "padding": "40px",
-                                                    "textAlign": "center",
-                                                    "color": "#999",
-                                                },
-                                            ),
+                                            children=build_empty_state("No manuals retrieved"),
                                             className="manuals-card",
                                         ),
                                     ],
-                                    style={
-                                        "width": "48%",
-                                        "display": "inline-block",
-                                        "verticalAlign": "top",
-                                    },
                                 ),
                             ],
                             className="card-section",
@@ -267,57 +298,32 @@ app.layout = html.Div(
 
                         html.Div(
                             [
-                                html.H3("📊 Fleet Overview"),
+                                html.H3("Fleet Overview"),
 
                                 html.Div(
                                     [
                                         html.Div(
                                             [
-                                                html.Div(
-                                                    "Total Engines",
-                                                    className="kpi-label",
-                                                ),
-                                                html.Div(
-                                                    id="total-engines-kpi",
-                                                    className=(
-                                                        "kpi-value kpi-value-total"
-                                                    ),
-                                                ),
+                                                html.Div("Total Engines", className="kpi-label"),
+                                                html.Div(id="total-engines-kpi", className="kpi-value kpi-value-total"),
                                             ],
-                                            className="kpi-card kpi-total",
+                                            className="kpi-card",
                                         ),
 
                                         html.Div(
                                             [
-                                                html.Div(
-                                                    "High Risk",
-                                                    className="kpi-label",
-                                                ),
-                                                html.Div(
-                                                    id="high-risk-kpi",
-                                                    className=(
-                                                        "kpi-value "
-                                                        "kpi-value-high-risk"
-                                                    ),
-                                                ),
+                                                html.Div("High Risk", className="kpi-label"),
+                                                html.Div(id="high-risk-kpi", className="kpi-value kpi-value-high-risk"),
                                             ],
-                                            className="kpi-card kpi-high-risk",
+                                            className="kpi-card",
                                         ),
 
                                         html.Div(
                                             [
-                                                html.Div(
-                                                    "Average Predicted RUL",
-                                                    className="kpi-label",
-                                                ),
-                                                html.Div(
-                                                    id="avg-rul-kpi",
-                                                    className=(
-                                                        "kpi-value kpi-value-avg"
-                                                    ),
-                                                ),
+                                                html.Div("Average Predicted RUL", className="kpi-label"),
+                                                html.Div(id="avg-rul-kpi", className="kpi-value kpi-value-avg"),
                                             ],
-                                            className="kpi-card kpi-avg",
+                                            className="kpi-card",
                                         ),
                                     ],
                                     className="kpi-container",
@@ -325,12 +331,11 @@ app.layout = html.Div(
 
                                 html.Div(
                                     [
-                                        html.H4(
-                                            "Predicted RUL Across Fleet"
-                                        ),
+                                        html.H4("Predicted RUL Across Fleet"),
                                         dcc.Graph(
                                             id="rul-distribution-chart",
-                                            style={"height": "400px"},
+                                            style={"height": "380px"},
+                                            config={"displayModeBar": False},
                                         ),
                                     ],
                                     className="chart-container",
@@ -348,8 +353,8 @@ app.layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "TurbineGuard AI | PatchTST + LangGraph + MCP + FAISS RAG "
-                    "| Work orders shown as proposed actions"
+                    "TURBINEGUARD AI  ·  PatchTST + LangGraph + MCP + FAISS RAG  ·  "
+                    "Work orders shown as proposed actions"
                 ),
             ],
             className="dashboard-footer",
@@ -357,6 +362,18 @@ app.layout = html.Div(
     ],
     className="dashboard-container",
 )
+
+
+def empty_figure():
+    fig = go.Figure()
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=380,
+        xaxis={"visible": False},
+        yaxis={"visible": False},
+    )
+    return fig
 
 
 @app.callback(
@@ -372,19 +389,16 @@ def update_engine_selector(dataset):
 
 
 @app.callback(
-    [
-        Output("current-rul-display", "children"),
-        Output("current-cycle-display", "children"),
-        Output("regime-display", "children"),
-    ],
+    Output("gauge-row-container", "children"),
     [
         Input("dataset-selector", "value"),
         Input("engine-selector", "value"),
+        Input("rul-threshold", "value"),
     ],
 )
-def preview_prediction(dataset, engine_id):
+def preview_prediction(dataset, engine_id, rul_threshold):
     if not dataset or engine_id is None:
-        return "—", "—", "—"
+        return build_gauge_row(0, "neutral", "—", "—")
 
     try:
         data = load_dataset(dataset)
@@ -392,14 +406,17 @@ def preview_prediction(dataset, engine_id):
 
         prediction = predict_engine_rul(dataset, engine_data)
         latest_cycle = int(engine_data["time_in_cycles"].max())
+        predicted_rul = float(prediction["predicted_rul"])
+        status = risk_status(predicted_rul, rul_threshold or 30)
 
-        return (
-            f"{prediction['predicted_rul']:.1f}",
-            str(latest_cycle),
-            str(prediction["operating_regime"]),
+        return build_gauge_row(
+            predicted_rul,
+            status,
+            latest_cycle,
+            prediction["operating_regime"],
         )
     except Exception:
-        return "Error", "—", "—"
+        return build_gauge_row(0, "neutral", "—", "—")
 
 
 @app.callback(
@@ -408,6 +425,7 @@ def preview_prediction(dataset, engine_id):
         Output("work-order-card", "children"),
         Output("manuals-card", "children"),
         Output("status-message", "children"),
+        Output("status-message", "className"),
         Output("total-engines-kpi", "children"),
         Output("high-risk-kpi", "children"),
         Output("avg-rul-kpi", "children"),
@@ -430,7 +448,8 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
             dash.no_update,
             dash.no_update,
             dash.no_update,
-            go.Figure(),
+            dash.no_update,
+            empty_figure(),
         )
 
     try:
@@ -441,81 +460,51 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
         )
 
         predicted_rul = float(result["rul_prediction"])
-        status, color, icon = risk_label(predicted_rul, rul_threshold)
+        status = risk_status(predicted_rul, rul_threshold)
 
         agent_banner = html.Div(
             [
-                html.H3(f"{icon} {status}"),
+                html.Div(build_status_pill(status), className="decision-strip-badge"),
                 html.Div(
-                    result["final_decision"],
-                    className="agent-decision-banner",
-                    style={
-                        "backgroundColor": color,
-                        "color": "white",
-                        "padding": "18px",
-                        "borderRadius": "8px",
-                    },
+                    [
+                        html.Div(STATUS_LABEL.get(status, status.upper()), className="decision-strip-title"),
+                        html.Div(result["final_decision"], className="decision-strip-detail"),
+                    ],
+                    className="decision-strip-body",
                 ),
-            ]
+            ],
+            className=f"decision-strip status-{status}",
         )
 
         if result.get("work_order"):
             work_order = result["work_order"]
-            priority_color = {
-                "HIGH": "#d62728",
-                "MEDIUM": "#ff7f0e",
-                "LOW": "#2ca02c",
-            }[work_order.priority]
 
             work_order_html = html.Div(
                 [
-                    html.Div(
-                        "SIMULATED / PROPOSED — no CMMS record was created",
-                        style={
-                            "fontWeight": "bold",
-                            "color": "#666",
-                            "marginBottom": "12px",
-                        },
-                    ),
+                    html.Div("SIMULATED / PROPOSED — no CMMS record was created", className="work-order-simulated-tag"),
                     html.Div(
                         [
                             html.Div(
                                 [
-                                    html.Div(
-                                        "Status",
-                                        className="work-order-label",
-                                    ),
-                                    html.Div(
-                                        work_order.status,
-                                        className="work-order-value",
-                                    ),
+                                    html.Div("Status", className="work-order-label"),
+                                    html.Div(work_order.status, className="work-order-value"),
                                 ],
                                 className="work-order-metric",
                             ),
                             html.Div(
                                 [
-                                    html.Div(
-                                        "Priority",
-                                        className="work-order-label",
-                                    ),
+                                    html.Div("Priority", className="work-order-label"),
                                     html.Div(
                                         work_order.priority,
-                                        className="work-order-value",
-                                        style={"color": priority_color},
+                                        className=f"priority-pill priority-{work_order.priority}",
                                     ),
                                 ],
                                 className="work-order-metric",
                             ),
                             html.Div(
                                 [
-                                    html.Div(
-                                        "Engine",
-                                        className="work-order-label",
-                                    ),
-                                    html.Div(
-                                        str(work_order.engine_id),
-                                        className="work-order-value",
-                                    ),
+                                    html.Div("Engine", className="work-order-label"),
+                                    html.Div(str(work_order.engine_id), className="work-order-value"),
                                 ],
                                 className="work-order-metric",
                             ),
@@ -524,27 +513,15 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
                     ),
                     html.Div(
                         [
-                            html.Div(
-                                "Description:",
-                                style={
-                                    "fontWeight": "bold",
-                                    "marginBottom": "5px",
-                                },
-                            ),
-                            html.Div(work_order.description),
-                        ],
-                        style={"marginTop": "15px"},
+                            html.Div("Description", className="work-order-description-label"),
+                            html.Div(work_order.description, className="work-order-description"),
+                        ]
                     ),
                 ]
             )
         else:
-            work_order_html = html.Div(
-                "No work order proposed; predicted RUL is above the threshold.",
-                style={
-                    "padding": "40px",
-                    "textAlign": "center",
-                    "color": "#2ca02c",
-                },
+            work_order_html = build_empty_state(
+                "No work order proposed — predicted RUL is above the threshold.", positive=True
             )
 
         manuals = result.get("retrieved_manuals", [])
@@ -554,13 +531,19 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
                 [
                     html.Li(
                         [
-                            html.Span(
-                                manual["title"],
-                                className="manual-title",
+                            html.Div(
+                                [
+                                    html.Span(manual["title"], className="manual-title"),
+                                    html.Span(f"{manual['score']:.3f}", className="manual-score"),
+                                ],
+                                className="manual-title-row",
                             ),
-                            html.Span(
-                                f" (relevance: {manual['score']:.3f})",
-                                className="manual-score",
+                            html.Div(
+                                html.Div(
+                                    className="manual-score-fill",
+                                    style={"width": f"{min(manual['score'], 1.0) * 100:.0f}%"},
+                                ),
+                                className="manual-score-track",
                             ),
                         ],
                         className="manual-item",
@@ -570,14 +553,7 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
                 className="manual-list",
             )
         else:
-            manuals_html = html.Div(
-                "No manuals needed for this predicted risk state.",
-                style={
-                    "padding": "40px",
-                    "textAlign": "center",
-                    "color": "#999",
-                },
-            )
+            manuals_html = build_empty_state("No manuals needed for this predicted risk state.")
 
         data = load_dataset(dataset)
         fleet_rows = []
@@ -605,36 +581,62 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
             x="unit_nr",
             y="predicted_rul",
             color="predicted_rul",
-            color_continuous_scale="RdYlGn",
+            color_continuous_scale=["#e5484d", "#e8a33d", "#3ecf8e"],
             labels={
                 "unit_nr": "Engine ID",
                 "predicted_rul": "Predicted RUL (cycles)",
             },
         )
 
+        figure.update_traces(
+            marker_line_width=0,
+            hovertemplate="<b>Engine %{x}</b><br>Predicted RUL: %{y:.1f} cycles<extra></extra>",
+        )
+
         figure.update_layout(
             showlegend=False,
-            height=400,
-            xaxis_title="Engine ID",
-            yaxis_title="Predicted RUL (cycles)",
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            height=380,
+            margin=dict(l=10, r=10, t=10, b=10),
+            font=dict(family="Inter, sans-serif", color="#8b95a7", size=12),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(
+                title="Engine ID",
+                showgrid=False,
+                zeroline=False,
+                color="#8b95a7",
+                linecolor="rgba(148,163,184,0.15)",
+            ),
+            yaxis=dict(
+                title="Predicted RUL (cycles)",
+                showgrid=True,
+                gridcolor="rgba(148,163,184,0.08)",
+                zeroline=False,
+                color="#8b95a7",
+            ),
+            coloraxis_showscale=False,
+            hoverlabel=dict(
+                bgcolor="#171c26",
+                bordercolor="rgba(148,163,184,0.2)",
+                font=dict(family="JetBrains Mono, monospace", color="#e8ecf1", size=12),
+            ),
         )
 
         figure.add_hline(
             y=rul_threshold,
             line_dash="dash",
-            line_color="red",
+            line_color="#c98a4b",
+            line_width=1.5,
             annotation_text=f"Threshold: {rul_threshold} cycles",
-            annotation_position="right",
+            annotation_font_color="#c98a4b",
+            annotation_font_family="JetBrains Mono, monospace",
+            annotation_font_size=11,
+            annotation_position="top right",
         )
 
-        status_msg = html.Div(
-            (
-                f"✅ {dataset} model analysis completed for Engine {engine_id}. "
-                f"Predicted RUL: {predicted_rul:.1f} cycles."
-            ),
-            className="status-message status-success",
+        status_msg = (
+            f"Analysis complete for Engine {engine_id} on {dataset} — "
+            f"predicted RUL {predicted_rul:.1f} cycles."
         )
 
         return (
@@ -642,6 +644,7 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
             work_order_html,
             manuals_html,
             status_msg,
+            "status-message status-success",
             str(len(fleet_predictions)),
             str(high_risk_count),
             f"{average_rul:.1f}",
@@ -652,18 +655,24 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
         error_message = f"Analysis failed: {exc}"
 
         return (
-            html.Div(error_message, style={"color": "#d62728"}),
-            html.Div("No work order proposed"),
-            html.Div("No manuals retrieved"),
             html.Div(
-                error_message,
-                className="status-message",
-                style={"color": "#d62728"},
+                [
+                    html.Div(build_status_pill("critical", "ERROR"), className="decision-strip-badge"),
+                    html.Div(
+                        html.Div(error_message, className="decision-strip-detail"),
+                        className="decision-strip-body",
+                    ),
+                ],
+                className="decision-strip status-critical",
             ),
+            build_empty_state("No work order proposed"),
+            build_empty_state("No manuals retrieved"),
+            error_message,
+            "status-message status-error",
             "—",
             "—",
             "—",
-            go.Figure(),
+            empty_figure(),
         )
 
 
