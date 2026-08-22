@@ -481,14 +481,23 @@ body {
 }
 
 .sidebar .rc-slider-mark-text {
-    color: var(--text-tertiary);
+    color: var(--text-secondary) !important;
     font-family: var(--font-mono);
     font-size: 10px;
+    font-weight: 600;
     white-space: nowrap;
+    text-shadow: 0 1px 2px var(--bg-void);
 }
 
 .sidebar .rc-slider-mark-text-active {
-    color: var(--text-secondary);
+    color: var(--accent-cyan) !important;
+}
+
+/* Hide Dash's always-visible slider value tooltip. */
+.sidebar .rc-slider-tooltip,
+.sidebar .rc-slider-tooltip-placement-top,
+.sidebar .rc-slider-tooltip-placement-bottom {
+    display: none !important;
 }
 
 .sidebar .rc-slider-tooltip-inner {
