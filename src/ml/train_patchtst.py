@@ -252,7 +252,7 @@ def main():
 
             checkpoint = torch.load(
                 checkpoint_path,
-                map_location=device,                #test2
+                map_location=device,                #test
                 weights_only=False,
             )
             model.load_state_dict(checkpoint["model_state_dict"])
