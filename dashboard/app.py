@@ -29,6 +29,7 @@ DATASETS = ["FD001", "FD002", "FD003", "FD004"]
 RUL_GAUGE_MAX = 125
 
 _data_cache: dict[str, pd.DataFrame] = {}
+_fleet_prediction_cache: dict[str, pd.DataFrame] = {}
 
 
 # -----------------------------------------------------------------------------
@@ -48,7 +49,30 @@ def load_dataset(dataset: str) -> pd.DataFrame:
 
     return _data_cache[dataset]
 
+def get_fleet_predictions(dataset: str) -> pd.DataFrame:
+    """Compute one RUL prediction per engine and cache it by dataset."""
+    dataset = dataset.upper()
 
+    if dataset in _fleet_prediction_cache:
+        return _fleet_prediction_cache[dataset].copy()
+
+    data = load_dataset(dataset)
+    fleet_rows = []
+
+    for engine_id, engine_data in data.groupby("unit_nr", sort=True):
+        prediction = predict_engine_rul(dataset, engine_data)
+
+        fleet_rows.append(
+            {
+                "unit_nr": int(engine_id),
+                "predicted_rul": float(prediction["predicted_rul"]),
+            }
+        )
+
+    fleet_predictions = pd.DataFrame(fleet_rows)
+    _fleet_prediction_cache[dataset] = fleet_predictions
+
+    return fleet_predictions.copy()
 def engine_options(dataset: str):
     data = load_dataset(dataset)
     engines = sorted(data["unit_nr"].unique().tolist())
@@ -625,22 +649,7 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
         else:
             manuals_html = build_empty_state("No manuals needed for this predicted risk state.")
 
-        data = load_dataset(dataset)
-        fleet_rows = []
-
-        for fleet_engine in sorted(data["unit_nr"].unique()):
-            engine_data = data[data["unit_nr"] == fleet_engine]
-
-            prediction = predict_engine_rul(dataset, engine_data)
-
-            fleet_rows.append(
-                {
-                    "unit_nr": fleet_engine,
-                    "predicted_rul": prediction["predicted_rul"],
-                }
-            )
-
-        fleet_predictions = pd.DataFrame(fleet_rows)
+        fleet_predictions = get_fleet_predictions(dataset)
         high_risk_count = int(
             (fleet_predictions["predicted_rul"] < rul_threshold).sum()
         )

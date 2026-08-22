@@ -115,27 +115,91 @@ def anomaly_detector_node(state: AgentState) -> AgentState:
 
 
 def rca_investigator_node(state: AgentState) -> AgentState:
-    """Search maintenance manuals for a possible failure-mode explanation."""
+    """Generate a cautious, sensor-trend-based failure hypothesis and retrieve manuals."""
     if not state["anomaly_detected"]:
         state["iteration_count"] += 1
         return state
 
-    sensors = state["sensor_reading"].sensors
-
-    sensor_deviations = {
-        name: abs(value)
-        for name, value in sensors.items()
-    }
-    top_sensors = sorted(
-        sensor_deviations.items(),
-        key=lambda item: item[1],
-        reverse=True,
-    )[:3]
-
-    sensor_names = ", ".join(name for name, _ in top_sensors)
-    query = f"Engine degradation suspected from sensor patterns: {sensor_names}"
+    engine_id = state["engine_id"]
+    dataset = state["dataset"]
 
     try:
+        engine_window = load_engine_window(dataset, engine_id)
+
+        # Compare the recent operating window with earlier engine history.
+        recent_n = min(20, max(5, len(engine_window) // 4))
+        baseline_end = max(recent_n, len(engine_window) - recent_n)
+
+        recent = engine_window.tail(recent_n)
+        baseline = engine_window.iloc[:baseline_end]
+
+        sensor_scores = {}
+
+        for sensor in SENSOR_COLUMNS:
+            baseline_values = baseline[sensor].to_numpy(dtype=np.float32)
+            recent_values = recent[sensor].to_numpy(dtype=np.float32)
+
+            baseline_mean = float(np.mean(baseline_values))
+            baseline_std = float(np.std(baseline_values))
+
+            # Prevent division by zero for nearly constant sensor channels.
+            if baseline_std < 1e-6:
+                baseline_std = 1.0
+
+            recent_mean = float(np.mean(recent_values))
+            trend = float(recent_values[-1] - recent_values[0])
+
+            # Normalized recent-vs-baseline deviation plus normalized local trend.
+            shift_score = abs(recent_mean - baseline_mean) / baseline_std
+            trend_score = abs(trend) / baseline_std
+
+            sensor_scores[sensor] = shift_score + 0.5 * trend_score
+
+        top_sensors = sorted(
+            sensor_scores.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:3]
+
+        top_sensor_names = [name for name, _ in top_sensors]
+        evidence = ", ".join(
+            f"{name} (anomaly score {score:.2f})"
+            for name, score in top_sensors
+        )
+
+        # C-MAPSS sensor numbers alone do not prove a physical fault.
+        # These are deliberately phrased as cautious hypotheses.
+        if any(sensor in {"sensor_2", "sensor_3", "sensor_4", "sensor_11"} for sensor in top_sensor_names):
+            hypothesis = "Suspected core-temperature or turbine-efficiency degradation"
+            query = (
+                "turbofan maintenance manual core temperature turbine efficiency "
+                f"degradation evidence {', '.join(top_sensor_names)}"
+            )
+        elif any(sensor in {"sensor_7", "sensor_8", "sensor_9"} for sensor in top_sensor_names):
+            hypothesis = "Suspected compressor pressure-performance degradation"
+            query = (
+                "turbofan maintenance manual compressor pressure performance "
+                f"degradation evidence {', '.join(top_sensor_names)}"
+            )
+        elif any(sensor in {"sensor_12", "sensor_13", "sensor_14"} for sensor in top_sensor_names):
+            hypothesis = "Suspected fuel-flow or bypass-flow anomaly"
+            query = (
+                "turbofan maintenance manual fuel flow bypass flow anomaly "
+                f"evidence {', '.join(top_sensor_names)}"
+            )
+        elif any(sensor in {"sensor_15", "sensor_16", "sensor_17", "sensor_20", "sensor_21"} for sensor in top_sensor_names):
+            hypothesis = "Suspected rotational-speed or cooling-system degradation"
+            query = (
+                "turbofan maintenance manual rotational speed cooling system "
+                f"degradation evidence {', '.join(top_sensor_names)}"
+            )
+        else:
+            hypothesis = "Suspected multivariate engine-performance degradation"
+            query = (
+                "turbofan maintenance manual multivariate engine degradation "
+                f"evidence {', '.join(top_sensor_names)}"
+            )
+
         indexer = get_rag_indexer()
         results = indexer.search(query, top_k=2)
 
@@ -149,15 +213,15 @@ def rca_investigator_node(state: AgentState) -> AgentState:
         ]
 
         state["failure_mode_hypothesis"] = (
-            results[0][0]["title"]
-            if results
-            else "General engine degradation"
+            f"{hypothesis}. Evidence: {evidence}."
         )
 
     except Exception as exc:
-        state["error_log"].append(f"RAG lookup failed: {exc}")
+        state["error_log"].append(f"RCA lookup failed: {exc}")
         state["retrieved_manuals"] = []
-        state["failure_mode_hypothesis"] = "General engine degradation"
+        state["failure_mode_hypothesis"] = (
+            "Suspected general engine degradation; sensor-trend analysis was unavailable."
+        )
 
     state["iteration_count"] += 1
     return state

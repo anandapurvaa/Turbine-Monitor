@@ -138,7 +138,7 @@ class DashboardPredictor:
         features, regime_id = self._normalize_window(window, bundle["train_stats"])
         x = torch.from_numpy(features).unsqueeze(0).to(self.device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             predicted_rul = float(bundle["model"](x).item())
 
         predicted_rul = max(0.0, predicted_rul)
