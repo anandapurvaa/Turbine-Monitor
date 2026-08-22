@@ -117,21 +117,21 @@ def train_one_dataset(
         train_csv=train_csv,
         val_csv=val_csv,
         test_csv=test_csv,
-        context_length=36,
+        context_length=56,
         batch_size=batch_size,
     )
 
     config = PatchTSTConfig(
-        context_length=36,
+        context_length=56,
         patch_length=16,
         patch_stride=8,
         num_input_channels=24,
-        d_model=128,
-        encoder_layers=3,
-        encoder_attention_heads=4,
-        encoder_ffn_dim=256,
-        dropout=0.1,
-        head_dropout=0.1,
+        d_model=256,
+        encoder_layers=4,
+        encoder_attention_heads=8,
+        encoder_ffn_dim=512,
+        dropout=0.15,
+        head_dropout=0.15,
     )
 
     model = PatchTSTRegressor(config).to(device)
@@ -142,13 +142,13 @@ def train_one_dataset(
         weight_decay=weight_decay,
     )
 
-    criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss()
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer,
-        mode="min",
-        factor=0.5,
-        patience=5,
+        T_0=20,
+        T_mult=2,
+        eta_min=1e-6,
     )
 
     checkpoint_path = output_dir / f"best_model_{dataset}.pt"
@@ -163,7 +163,7 @@ def train_one_dataset(
         mlflow.log_params(
             {
                 "dataset": dataset,
-                "context_length": 36,
+                "context_length": 56,
                 "batch_size": batch_size,
                 "epochs": epochs,
                 "lr": lr,
@@ -228,7 +228,7 @@ def train_one_dataset(
                 step=epoch,
             )
 
-            scheduler.step(val_loss)
+            scheduler.step(epoch + 1)
 
             if val_mae < best_mae:
                 best_mae = val_mae
@@ -244,7 +244,7 @@ def train_one_dataset(
                         "rmse": val_rmse,
                         "train_stats": train_stats,
                         "config": config.to_dict(),
-                        "context_length": 36,
+                        "context_length": 56,
                         "num_input_channels": 24,
                     },
                     checkpoint_path,
@@ -309,11 +309,12 @@ def main():
         "--mlflow-uri",
         default=os.getenv("MLFLOW_TRACKING_URI", ""),
     )
-    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--patience", type=int, default=25)
+    parser.add_argument("--weight-decay", type=float, default=5e-5)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--lr", type=float, default=2e-4)
 
     args = parser.parse_args()
 
@@ -358,8 +359,6 @@ def main():
     results = []
 
     for dataset in datasets:
-        learning_rate = 1e-4 if dataset in ["FD002", "FD004"] else 3e-4
-
         result = train_one_dataset(
             dataset=dataset,
             data_dir=data_dir,
@@ -367,7 +366,7 @@ def main():
             device=device,
             epochs=args.epochs,
             batch_size=args.batch_size,
-            lr=learning_rate,
+            lr=args.lr,
             weight_decay=args.weight_decay,
             patience=args.patience,
             seed=args.seed,

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, Tuple
 
+
 import numpy as np
 import pandas as pd
 import torch
@@ -22,7 +23,7 @@ class CMAPSSDataset(Dataset):
     def __init__(
         self,
         csv_path: Path,
-        context_length: int = 36,
+        context_length: int = 56,
         stride: int = 1,
         normalize: bool = True,
         train_stats: Optional[dict] = None,
@@ -241,7 +242,7 @@ def get_dataloaders(
     train_csv: Path,
     val_csv: Path,
     test_csv: Path,
-    context_length: int = 36,
+    context_length: int = 56,
     batch_size: int = 64,
 ) -> Tuple[DataLoader, DataLoader, DataLoader, dict]:
     train_ds = CMAPSSDataset(
