@@ -248,67 +248,23 @@ body {
     margin-top: 0;
 }
 
-/* Dropdowns (dash-core-components Select) */
-.sidebar .Select-control,
-.sidebar .dash-dropdown .Select-control {
-    background-color: var(--bg-input) !important;
-    border: 1px solid var(--border-hairline-strong) !important;
-    border-radius: var(--radius-sm) !important;
-    min-height: 40px !important;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.sidebar .Select-control:hover {
-    border-color: var(--accent-cyan) !important;
-}
-
-.sidebar .is-focused > .Select-control,
-.sidebar .is-open > .Select-control {
+/* Dropdowns are dash-mantine-components' dmc.Select, styled inline via its
+   `styles` prop in app.py (input / dropdown / option keys) — that survives
+   Dash version upgrades, unlike targeting dcc.Dropdown's internal
+   classnames from here. Only its focus ring is layered on from CSS: */
+.sidebar [data-mantine-color-scheme] input:focus {
     border-color: var(--accent-cyan) !important;
     box-shadow: 0 0 0 3px var(--accent-cyan-dim) !important;
 }
 
-.sidebar .Select-value-label,
-.sidebar .Select-input > input {
-    color: var(--text-primary) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 13px !important;
-}
-
-.sidebar .Select-placeholder {
-    color: var(--text-tertiary) !important;
-}
-
-.sidebar .Select-arrow {
-    border-color: var(--text-tertiary) transparent transparent !important;
-}
-
-.sidebar .Select-menu-outer {
-    background-color: var(--bg-panel-raised) !important;
-    border: 1px solid var(--border-hairline-strong) !important;
-    border-radius: var(--radius-sm) !important;
-    box-shadow: var(--shadow-panel-hover) !important;
-    overflow: hidden;
-    margin-top: 4px !important;
-}
-
-.sidebar .Select-option {
-    background-color: transparent !important;
-    color: var(--text-secondary) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 13px !important;
-    padding: 10px 12px !important;
-}
-
-.sidebar .Select-option.is-focused,
-.sidebar .Select-option:hover {
-    background-color: var(--bg-panel-hover) !important;
-    color: var(--text-primary) !important;
-}
-
-.sidebar .Select-option.is-selected {
+.sidebar .mantine-Select-option[data-combobox-selected="true"] {
     background-color: var(--accent-cyan-dim) !important;
     color: var(--accent-cyan) !important;
+}
+
+.sidebar .mantine-Select-option:hover {
+    background-color: var(--bg-panel-hover) !important;
+    color: var(--text-primary) !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -446,7 +402,7 @@ body {
 .tile-row {
     display: flex;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3) 0;
 }
 
 .metric-tile {
@@ -471,12 +427,15 @@ body {
 .metric-tile-value {
     font-family: var(--font-mono);
     font-weight: 600;
-    font-size: 18px;
+    font-size: 15px;
     font-variant-numeric: tabular-nums;
     color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
+    /* Wrap rather than clip — a truncated cycle count or regime name reads
+       as missing data, not as "there's more, scroll/hover to see it". */
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
 }
 
 /* ---------------------------------------------------------------------------

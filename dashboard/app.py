@@ -7,6 +7,7 @@ from pathlib import Path
 
 import os
 import dash
+import dash_mantine_components as dmc
 from dash import Input, Output, State, dcc, html
 import pandas as pd
 import plotly.express as px
@@ -52,8 +53,10 @@ def engine_options(dataset: str):
     data = load_dataset(dataset)
     engines = sorted(data["unit_nr"].unique().tolist())
 
+    # Mantine's Select expects string values, so unit_nr (int) is stringified
+    # here and cast back to int wherever it's used to filter the dataframe.
     return [
-        {"label": f"Engine {engine}", "value": engine}
+        {"label": f"Engine {engine}", "value": str(engine)}
         for engine in engines
     ]
 
@@ -112,33 +115,16 @@ def build_gauge(value: float, caption: str, status: str = "neutral", max_scale: 
 
 
 def build_gauge_row(value: float, status: str, latest_cycle, regime):
-    return html.Div(
+    # Two siblings, not one cramped row: the dial keeps its own line, and
+    # Cycle/Regime get the full sidebar width below so their values are
+    # never clipped.
+    gauge_section = html.Div(
         [
             build_gauge(value, "cycles left", status),
             html.Div(
                 [
                     html.Div("Predicted RUL", className="gauge-meta-label"),
                     build_status_pill(status),
-                    html.Div(
-                        [
-                            html.Div(
-                                [
-                                    html.Div("Cycle", className="metric-tile-label"),
-                                    html.Div(str(latest_cycle), className="metric-tile-value"),
-                                ],
-                                className="metric-tile",
-                            ),
-                            html.Div(
-                                [
-                                    html.Div("Regime", className="metric-tile-label"),
-                                    html.Div(str(regime), className="metric-tile-value"),
-                                ],
-                                className="metric-tile",
-                            ),
-                        ],
-                        className="tile-row",
-                        style={"marginTop": "12px", "marginBottom": "0"},
-                    ),
                 ],
                 className="gauge-meta",
             ),
@@ -146,10 +132,88 @@ def build_gauge_row(value: float, status: str, latest_cycle, regime):
         className="gauge-row",
     )
 
+    tiles_section = html.Div(
+        [
+            html.Div(
+                [
+                    html.Div("Cycle", className="metric-tile-label"),
+                    html.Div(str(latest_cycle), className="metric-tile-value"),
+                ],
+                className="metric-tile",
+            ),
+            html.Div(
+                [
+                    html.Div("Regime", className="metric-tile-label"),
+                    html.Div(str(regime), className="metric-tile-value"),
+                ],
+                className="metric-tile",
+            ),
+        ],
+        className="tile-row",
+    )
+
+    return [gauge_section, tiles_section]
+
 
 def build_empty_state(text: str, positive: bool = False):
     classes = "empty-state is-positive" if positive else "empty-state"
     return html.Div(text, className=classes)
+
+
+# dcc.Dropdown's default light-theme CSS classnames aren't stable across Dash
+# versions, which is why targeting ".Select-control" etc. from style.css was
+# silently no-oping. dmc.Select is styled directly through its own `styles`
+# prop instead, so it can't fall back to an unstyled default.
+MANTINE_THEME = {
+    "fontFamily": "var(--font-body)",
+    "primaryColor": "cyan",
+    "colors": {
+        "cyan": [
+            "#e0fbfc", "#b8f3f5", "#8ce9ed", "#5fdfe4", "#3dd8de",
+            "#2dd4dd", "#22b4bc", "#18939a", "#0f6f75", "#083f42",
+        ],
+        "dark": [
+            "#e8ecf1", "#8b95a7", "#6b7386", "#565f72", "#3a4152",
+            "#2c3140", "#232837", "#1c2230", "#171c26", "#12161d",
+        ],
+    },
+}
+
+
+def dmc_select(component_id: str, data: list[dict[str, str]], value: str | None = None):
+    return dmc.Select(
+        id=component_id,
+        data=data,
+        value=value,
+        searchable=False,
+        clearable=False,
+        allowDeselect=False,
+        checkIconPosition="right",
+        styles={
+            "input": {
+                "backgroundColor": "var(--bg-input)",
+                "borderColor": "var(--border-hairline-strong)",
+                "borderRadius": "8px",
+                "color": "var(--text-primary)",
+                "fontFamily": "var(--font-mono)",
+                "fontSize": "13px",
+                "fontWeight": 500,
+                "minHeight": "40px",
+            },
+            "dropdown": {
+                "backgroundColor": "var(--bg-panel-raised)",
+                "borderColor": "var(--border-hairline-strong)",
+                "borderRadius": "8px",
+                "boxShadow": "0 12px 28px -12px rgba(0, 0, 0, 0.65)",
+            },
+            "option": {
+                "color": "var(--text-secondary)",
+                "fontFamily": "var(--font-mono)",
+                "fontSize": "13px",
+                "borderRadius": "6px",
+            },
+        },
+    )
 
 
 app = dash.Dash(
@@ -168,7 +232,7 @@ default_dataset = "FD004"
 default_engines = engine_options(default_dataset)
 default_engine = default_engines[0]["value"]
 
-app.layout = html.Div(
+dashboard_layout = html.Div(
     [
         html.Div(
             [
@@ -196,9 +260,9 @@ app.layout = html.Div(
                         html.H3("Model Selection"),
 
                         html.Label("Dataset / Model"),
-                        dcc.Dropdown(
-                            id="dataset-selector",
-                            options=[
+                        dmc_select(
+                            "dataset-selector",
+                            data=[
                                 {
                                     "label": f"{dataset} PatchTST model",
                                     "value": dataset,
@@ -206,17 +270,15 @@ app.layout = html.Div(
                                 for dataset in DATASETS
                             ],
                             value=default_dataset,
-                            clearable=False,
                         ),
 
                         html.H3("Engine Selection", style={"marginTop": "28px"}),
 
                         html.Label("Select Engine ID"),
-                        dcc.Dropdown(
-                            id="engine-selector",
-                            options=default_engines,
+                        dmc_select(
+                            "engine-selector",
+                            data=default_engines,
                             value=default_engine,
-                            clearable=False,
                         ),
 
                         html.Div(
@@ -363,6 +425,12 @@ app.layout = html.Div(
     className="dashboard-container",
 )
 
+app.layout = dmc.MantineProvider(
+    forceColorScheme="dark",
+    theme=MANTINE_THEME,
+    children=dashboard_layout,
+)
+
 
 def empty_figure():
     fig = go.Figure()
@@ -378,7 +446,7 @@ def empty_figure():
 
 @app.callback(
     [
-        Output("engine-selector", "options"),
+        Output("engine-selector", "data"),
         Output("engine-selector", "value"),
     ],
     Input("dataset-selector", "value"),
@@ -402,7 +470,7 @@ def preview_prediction(dataset, engine_id, rul_threshold):
 
     try:
         data = load_dataset(dataset)
-        engine_data = data[data["unit_nr"] == engine_id]
+        engine_data = data[data["unit_nr"] == int(engine_id)]
 
         prediction = predict_engine_rul(dataset, engine_data)
         latest_cycle = int(engine_data["time_in_cycles"].max())
@@ -453,6 +521,8 @@ def run_analysis(n_clicks, dataset, engine_id, rul_threshold):
         )
 
     try:
+        engine_id = int(engine_id)
+
         result = run_turbineguard(
             engine_id=engine_id,
             dataset=dataset,
